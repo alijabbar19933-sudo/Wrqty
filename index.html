@@ -91,13 +91,17 @@ h2.sec{font-size:15px;color:var(--mut);font-weight:500;margin:6px 0 10px}
 .tag-h{font-family:'Tajawal',sans-serif;font-size:13px;background:var(--ac-soft);color:var(--ac)}
 .in{width:100%;border:1px solid var(--ln);background:var(--bg);border-radius:10px;padding:9px 11px;min-width:0}
 .in:focus{outline:2px solid var(--ac);outline-offset:0;border-color:var(--ac)}
+textarea.ag{overflow:hidden;min-height:44px}
 textarea.in{resize:none;min-height:44px;line-height:1.7;font-family:'Amiri','Tajawal',serif;font-size:18px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .row label{font-size:13px;color:var(--mut)}
 .mk{width:76px;flex:none;text-align:center}
 .grow{flex:1}
 .branch{border-inline-start:3px solid var(--ac-soft);padding-inline-start:10px;display:flex;flex-direction:column;gap:6px}
-.br-head{display:flex;gap:6px;align-items:center}
+.br-head{display:flex;gap:5px;align-items:center}
+.br-head .grow{flex:1 1 0;min-width:0}
+.br-head .mk{width:56px;padding-inline:3px;font-size:15px}
+.br-head .ico{width:34px;min-width:34px;padding:0}
 .br-tag{font-family:'Amiri',serif;font-weight:700;font-size:18px;color:var(--ac);min-width:22px;text-align:center}
 details.ans summary{cursor:pointer;color:var(--ac);font-size:14px;font-weight:500;padding:2px 0;list-style-position:inside}
 details.ans textarea{margin-top:6px}
@@ -131,6 +135,9 @@ details.ans textarea{margin-top:6px}
 .colors input{width:42px;height:34px;border:1px solid var(--ln);border-radius:8px;padding:2px;background:var(--sf)}
 .dock{position:sticky;bottom:0;margin-top:16px;padding-block:10px calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,var(--bg) 70%,transparent);margin-inline:-16px;padding-inline:16px}
 .dock .btn{width:100%;padding:13px;font-size:17px}
+.dock2{display:flex;gap:8px}
+.dock2 .btn.primary{flex:1;width:auto}
+.dock2 .dock-plus{width:58px;flex:none;font-size:26px;padding:0;line-height:1}
 .hint{font-size:13px;color:var(--mut);margin:10px 2px 0;line-height:1.7}
 .part{border:1px solid var(--ln);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--bg)}
 .part-h{display:flex;align-items:center;gap:6px}
@@ -198,6 +205,16 @@ details.ans textarea{margin-top:6px}
 .a-no{font-weight:700;white-space:nowrap}
 .a-text{flex:1;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere}
 .space{display:block}
+.ln-dots{background-image:radial-gradient(circle at 50% 7.3mm,#000 .22mm,transparent .3mm);background-size:1.7mm 7.55mm}
+.ln-grid{border:.2mm solid #777;background-image:linear-gradient(#999 .15mm,transparent .15mm),linear-gradient(90deg,#999 .15mm,transparent .15mm);background-size:7.55mm 7.55mm}
+.ln-box{border:.3mm solid #000;border-radius:1.5mm}
+.ln-blank{background:none}
+.psg.st-plain{border:0;padding:0;margin:1.6mm 0}
+.psg.st-center{border:0;text-align:center;font-weight:700}
+.psg.st-note{border:0;font-size:.9em;padding:0}
+.chs.col{display:flex;flex-direction:column}
+.chs.inl{display:block;margin:1.2mm 0 0}
+.chs.inl span{margin-inline-end:5mm;white-space:nowrap}
 .space.lines{background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 7.3mm,#555 7.3mm,#555 7.55mm)}
 .bism{text-align:center;font-weight:700;font-size:1.15em;margin-bottom:1.6mm}
 .note{border:.3mm solid #000;padding:.8mm 3mm;margin:1.6mm 0 2mm;font-size:.95em}
@@ -388,7 +405,7 @@ details.ans textarea{margin-top:6px}
     <button role="tab" data-act="tab" data-tab="design">الطباعة والترقيم</button>
   </div>
   <div id="edBody"></div>
-  <div class="dock"><button class="btn primary" data-act="preview">معاينة وتصدير PDF</button></div>
+  <div class="dock dock2"><button class="btn primary" data-act="preview">معاينة وتصدير PDF</button><button class="btn dock-plus" data-act="open-paper" aria-label="إضافة إلى الورقة">＋</button></div>
 </section>
 
 <section id="preview" hidden>
@@ -466,7 +483,7 @@ const EYEOFF='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-
 
 let docs=[], cur=null, tab='items', view='home', pageIdx=0, zoom=0, sheetsArr=[];
 let NUMM='ar', DIGM='as', EFFFS=14, lastField=null, sheetFor=-1;
-let pendKind='exam', pendImgQ=-1, setupPrint=false, rec=null;
+let pendImgBr=null, pendKind='exam', pendImgQ=-1, setupPrint=false, rec=null;
 const MIC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg>';
 
 /* ---------- أدوات ---------- */
@@ -520,9 +537,10 @@ function norm(d){
   if(d.settings.minSp==null)d.settings.minSp=40;
   if(d.settings.fitV!==2){d.settings.fitV=2;d.settings.fit1=(d.kind==='exam')}
   d.items=(d.items||[]).map(it=>{
-    if(it.type==='h')return it;
+    if(it.type==='h'||it.type==='pb')return it;
     it.parts=Array.isArray(it.parts)?it.parts:[];
     it.branches=Array.isArray(it.branches)?it.branches:[];
+    it.branches.forEach(b=>{b.parts=Array.isArray(b.parts)?b.parts:[]});
     return it;
   });
   return d;
@@ -640,22 +658,20 @@ function marksHTML(v,d){const n=num(v);return d.settings.marks&&n>0?`<span class
 function stemRow(q,n,d){return `<div class="q-row"><span class="q-no">${qLabel(n,d)}</span><div class="q-text">${fmt(q.text)||'&nbsp;'}</div>${marksHTML(q.marks,d)}</div>`}
 const brRow=(b,i,d)=>`<span class="br-no">${brLabel(i,d)}</span><div class="q-text">${fmt(b.text)||'&nbsp;'}</div>${marksHTML(brTotal(b),d)}`;
 const ptM=(m,d)=>{const n=num(m);return d.settings.marks&&n>0?`<em class="pt-m">(${markLabel(n)})</em>`:''};
-const ptMode=(items,d)=>{const m=d.settings.ptl||'auto';if(m==='row'||m==='col')return m;const a=items.filter(x=>String(x).trim());const avg=a.reduce((n,x)=>n+String(x).replace(/[*_]/g,'').length,0)/(a.length||1);return avg>=18?'row':'col'};
-const ptsInline=(items,d,ms)=>`<div class="pts-in ${ptMode(items,d)}">${items.map((t,i)=>`<span><b>${ptLabel(i,d)}</b>${fmt(t)}${ptM((ms||[])[i],d)}</span>`).join('')}</div>`;
-const brPts=(b,d)=>{if(!(b.pts&&b.pts.some(x=>String(x).trim())))return '';const ix=b.pts.map((x,i)=>i).filter(i=>String(b.pts[i]).trim());return ptsInline(ix.map(i=>b.pts[i]),d,ix.map(i=>(b.ptm||[])[i]))};
-function brTail(q,b,d){const showAns=d.settings.answers&&b.answer&&b.answer.trim();return brPts(b,d)+(showAns?ansHTML('ج',b.answer):spaceHTML(spaceFor(q,d),d))}
+const ptMode=(items,d,own)=>{const m=own||d.settings.ptl||'auto';if(m==='row'||m==='col')return m;const a=items.filter(x=>String(x).trim());const avg=a.reduce((n,x)=>n+String(x).replace(/[*_]/g,'').length,0)/(a.length||1);return avg>=18?'row':'col'};
+const ptsInline=(items,d,ms,own)=>`<div class="pts-in ${ptMode(items,d,own)}">${items.map((t,i)=>`<span><b>${ptLabel(i,d)}</b>${fmt(t)}${ptM((ms||[])[i],d)}</span>`).join('')}</div>`;
+const brPts=(b,d)=>{if(!(b.pts&&b.pts.some(x=>String(x).trim())))return '';const ix=b.pts.map((x,i)=>i).filter(i=>String(b.pts[i]).trim());return ptsInline(ix.map(i=>b.pts[i]),d,ix.map(i=>(b.ptm||[])[i]),b.ptl)};
+function brTail(q,b,d){const showAns=d.settings.answers&&b.answer&&b.answer.trim();return brPts(b,d)+(b.parts||[]).map(p=>partHTML(p,d)).join('')+(showAns?ansHTML('ج',b.answer):spaceHTML(spaceFor(q,d),d))}
 function branchHTML(q,b,i,n,d){
   return `<div class="br-wrap"><div class="q-row">${brRow(b,i,d)}</div>${brTail(q,b,d)}</div>`;
 }
-const isShort=(b,d)=>String(b.text||'').length<=40&&!(b.pts&&b.pts.some(x=>String(x).trim()))&&!(d.settings.answers&&b.answer&&b.answer.trim());
+const isShort=(b,d)=>String(b.text||'').length<=40&&!(b.parts&&b.parts.length)&&!(b.pts&&b.pts.some(x=>String(x).trim()))&&!(d.settings.answers&&b.answer&&b.answer.trim());
 function partHTML(p,d){
   switch(p.t){
-    case 'passage':return `<div class="psg">${fmt(p.text)}</div>`;
+    case 'passage':return `<div class="psg st-${p.st||'box'}">${p.st==='note'?'<b>ملاحظة: </b>':''}${fmt(p.text)}</div>`;
     case 'poem':{
-      const rows=String(p.text||'').split('\n').filter(l=>l.trim()).map(l=>{
-        const a=l.split('/');
-        return a.length>1?`<div class="vr"><span>${fmt(a[0].trim())}</span><span>${fmt(a.slice(1).join('/').trim())}</span></div>`:`<div class="vr one"><span>${fmt(l.trim())}</span></div>`;
-      });
+      const src=Array.isArray(p.v)?p.v.filter(r=>String(r[0]||'').trim()||String(r[1]||'').trim()):String(p.text||'').split('\n').filter(l=>l.trim()).map(l=>{const a=l.split('/');return [a[0],a.slice(1).join('/')]});
+      const rows=src.map(r=>String(r[1]||'').trim()?`<div class="vr"><span>${fmt(String(r[0]||'').trim())}</span><span>${fmt(String(r[1]).trim())}</span></div>`:`<div class="vr one"><span>${fmt(String(r[0]||'').trim())}</span></div>`);
       return `<div class="poem">${rows.join('')}</div>`;
     }
     case 'quote':{
@@ -663,11 +679,11 @@ function partHTML(p,d){
       return `<div class="qt">${o[0]} ${fmt(p.text)} ${o[1]}${String(p.src||'').trim()?`<small>(${fmt(p.src)})</small>`:''}</div>`;
     }
     case 'image':return `<div class="img"><img src="${p.src}" style="width:${num(p.w)||60}%;${d.settings.bw?'filter:grayscale(1)':''}" alt=""></div>`;
-    case 'lines':return `<div class="space lines" style="height:${(num(p.n)||1)*7.55*SPSC}mm"></div>`;
-    case 'choices':return `<div class="chs">${p.opts.map((o,i)=>`<span><b>${brLabel(i,d)}</b>${fmt(o)}</span>`).join('')}</div>`;
+    case 'lines':{const st=p.ls||'lines';return `<div class="space ${st==='lines'?'lines':'ln-'+st}" style="height:${(num(p.n)||1)*7.55*SPSC}mm"></div>`}
+    case 'choices':{const lay=p.lay||'wrap';const sp=p.opts.map((o,i)=>`<span><b>${brLabel(i,d)}</b>${fmt(o)}</span>`).join(lay==='inl'?' ':'');return `<div class="chs ${lay}">${lay==='inl'?'( '+sp+' )':sp}</div>`}
     case 'match':return p.pairs.map((r,i)=>`<div class="mt-row"><span class="mt-a"><b>${ptLabel(i,d)}</b> ${fmt(r.a)}</span><span class="mt-g">(&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)</span><span class="mt-b"><b>${brLabel(i,d)}</b> ${fmt(r.b)}</span></div>`).join('');
     case 'table':return `<table class="tb"><tr>${p.cols.map(c=>`<th>${fmt(c)||'&nbsp;'}</th>`).join('')}</tr>${p.rows.map(r=>`<tr>${p.cols.map((_,c)=>`<td>${fmt(r[c])||'&nbsp;'}</td>`).join('')}</tr>`).join('')}</table>`;
-    case 'points':if(d.settings.compact)return ptsInline(p.items,d,p.ptm);return `<div class="pts">${p.items.map((t,i)=>`<div class="q-row"><span class="br-no">${ptLabel(i,d)}</span><div class="q-text">${fmt(t)||'&nbsp;'}</div>${marksHTML((p.ptm||[])[i],d)}</div>`).join('')}</div>`;
+    case 'points':if(d.settings.compact)return ptsInline(p.items,d,p.ptm,p.ptl);return `<div class="pts">${p.items.map((t,i)=>`<div class="q-row"><span class="br-no">${ptLabel(i,d)}</span><div class="q-text">${fmt(t)||'&nbsp;'}</div>${marksHTML((p.ptm||[])[i],d)}</div>`).join('')}</div>`;
   }
   return '';
 }
@@ -676,7 +692,7 @@ function buildBlocks(d){
   let first=(s.bism?`<div class="bism">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>`:'')+headerHTML(d)+(s.orn?'<div class="orn">﴾ ❖ ﴿</div>':'')+(d.kind==='exam'?noteHTML(d):'');
   const out=[{h:first}];let n=0,pend='';
   const secTot={};let curH=-1;
-  d.items.forEach((x,i)=>{if(x.type==='h'){curH=i;secTot[i]=0}else if(!x.hidden&&curH>=0)secTot[curH]+=qTotal(x)});
+  d.items.forEach((x,i)=>{if(x.type==='h'){curH=i;secTot[i]=0}else if(x.type==='q'&&!x.hidden&&curH>=0)secTot[curH]+=qTotal(x)});
   d.items.forEach((it,idx)=>{
     if(it.type==='h'){
       const hm=num(it.marks)>0?num(it.marks):((s.secTot&&secTot[idx]>0)?secTot[idx]:0);
@@ -684,6 +700,8 @@ function buildBlocks(d){
       if(d.kind==='exam'&&!s.color)pend+=`<div class="h-sec">${fmt(it.text)||'&nbsp;'}${hms}</div>`;
       else pend+=`<div class="h-heading">${fmt(it.text)||'&nbsp;'}${hms}</div>`;
       return}
+    if(it.type==='pb'){out.push({brk:true,h:''});return}
+    if(it.type==='blk'){if(it.hidden)return;const bh=(it.parts||[]).map(p=>partHTML(p,d)).join('');if(bh){out.push({h:pend+bh});pend=''}return}
     if(it.hidden)return;
     n++;
     const showAns=s.answers&&it.answer&&it.answer.trim();
@@ -724,6 +742,7 @@ function layout(d){
   const pages=[[]];let used=0;
   blocks.forEach((b,i)=>{
     const last=pages[pages.length-1];
+    if(b.brk){if(last.length){pages.push([]);used=0}return}
     if(last.length&&used+hs[i]>cap+0.5){pages.push([]);used=0}
     pages[pages.length-1].push(b);used+=hs[i];
   });
@@ -734,7 +753,7 @@ function paginate(d){
   const st=d.settings;
   SPSC=1;EFFFS=st.fs;
   let pages=layout(d);
-  if(st.fit1&&pages.length>1){
+  if(st.fit1&&pages.length>1&&!d.items.some(x=>x.type==='pb')){
     const minF=Math.min(st.fs,Math.max(8,num(st.minFs)||10)),minS=Math.min(1,Math.max(.1,(num(st.minSp)||40)/100));
     const f1=Math.max(minF,Math.min(st.fs,11)),tries=[];
     for(let f=st.fs-.5;f>=f1;f-=.5)tries.push([f,1]);
@@ -814,23 +833,25 @@ function commit(){saveNow();pushHist()}
 
 /* المحرر */
 const tools=(i,d)=>`<button class="ico" data-act="up" data-i="${i}" aria-label="للأعلى" ${i===0?'disabled':''}>↑</button><button class="ico" data-act="down" data-i="${i}" aria-label="للأسفل" ${i===d.items.length-1?'disabled':''}>↓</button><button class="ico" data-act="del-item" data-i="${i}" aria-label="حذف">✕</button>`;
-const ptools=(i,k,n)=>`<button class="ico" data-act="part-up" data-i="${i}" data-k="${k}" aria-label="للأعلى" ${k===0?'disabled':''}>↑</button><button class="ico" data-act="part-down" data-i="${i}" data-k="${k}" aria-label="للأسفل" ${k===n-1?'disabled':''}>↓</button><button class="ico" data-act="del-part" data-i="${i}" data-k="${k}" aria-label="حذف">✕</button>`;
+const ptools=(i,k,n,bj)=>{if(window.__noPT)return '';const B=bj==null?'':` data-bj="${bj}"`;return `<button class="ico" data-act="part-up" data-i="${i}" data-k="${k}"${B} aria-label="للأعلى" ${k===0?'disabled':''}>↑</button><button class="ico" data-act="part-down" data-i="${i}" data-k="${k}"${B} aria-label="للأسفل" ${k===n-1?'disabled':''}>↓</button><button class="ico" data-act="del-part" data-i="${i}" data-k="${k}"${B} aria-label="حذف">✕</button>`};
 const stepper=(path,val,min,max,sfx,step,zl)=>`<span class="step"><button data-act="step" data-path="${path}" data-d="1" data-step="${step||1}" data-min="${min}" data-max="${max}" aria-label="زيادة">+</button><b>${(zl&&val===0)?zl:ar(val)+(sfx||'')}</b><button data-act="step" data-path="${path}" data-d="-1" data-step="${step||1}" data-min="${min}" data-max="${max}" aria-label="نقصان">−</button></span>`;
 const seg=(path,opts,val)=>`<div class="seg">${opts.map(o=>`<button data-act="set" data-path="${path}" data-val="${o[0]}" aria-pressed="${val===o[0]}">${o[1]}</button>`).join('')}</div>`;
 
-function partEditor(p,i,k,n){
-  const base=`items.${i}.parts.${k}`;
-  const head=(t)=>`<div class="part-h"><b>${t}</b>${ptools(i,k,n)}</div>`;
+function partEditor(p,i,k,n,bj){
+  const base=bj==null?`items.${i}.parts.${k}`:`items.${i}.branches.${bj}.parts.${k}`;
+  const BJ=bj==null?'':` data-bj="${bj}"`;
+  const head=(t)=>`<div class="part-h"><b>${t}</b>${ptools(i,k,n,bj)}</div>`;
   switch(p.t){
-    case 'passage':return `<div class="part">${head('نص / قطعة')}<textarea class="in" data-bind="${base}.text" placeholder="اكتب القطعة هنا">${esc(p.text)}</textarea></div>`;
-    case 'poem':return `<div class="part">${head('أبيات شعر')}<textarea class="in" data-bind="${base}.text" placeholder="صدر البيت / عجز البيت">${esc(p.text)}</textarea><div class="hint" style="margin:0">اكتب كل بيت في سطر، وافصل بين الشطرين بعلامة /</div></div>`;
+    case 'passage':return `<div class="part">${head('نص / قطعة')}<textarea class="in" data-bind="${base}.text" placeholder="اكتب القطعة هنا">${esc(p.text)}</textarea>${seg(base+'.st',[['plain','عادي'],['box','قطعة في إطار'],['note','ملاحظة'],['center','وسط']],p.st||'box')}</div>`;
+    case 'poem':{if(!Array.isArray(p.v))p.v=String(p.text||'').split('\n').filter(l=>l.trim()).map(l=>{const a=l.split('/');return [a[0].trim(),a.slice(1).join('/').trim()]});if(!p.v.length)p.v=[['','']];
+      return `<div class="part">${head('أبيات شعر')}${p.v.map((r,j)=>`<div class="br-head"><textarea class="in grow ag" rows="1" data-bind="${base}.v.${j}.0" placeholder="الصدر">${esc(r[0])}</textarea><textarea class="in grow ag" rows="1" data-bind="${base}.v.${j}.1" placeholder="العجز">${esc(r[1])}</textarea><button class="ico" data-act="parr" data-op="del" data-sub="verses" data-i="${i}" data-k="${k}"${BJ} data-j="${j}" aria-label="حذف البيت">✕</button></div>`).join('')}<div><button class="btn sm" data-act="parr" data-op="add" data-sub="verses" data-i="${i}" data-k="${k}"${BJ}>+ بيت آخر</button></div></div>`}
     case 'quote':return `<div class="part">${head('آية / حديث')}<div class="chips">${['آية','حديث'].map(x=>`<button class="chip" data-act="set" data-path="${base}.kind" data-val="${x}" aria-pressed="${p.kind===x}">${x}</button>`).join('')}</div><textarea class="in" data-bind="${base}.text" placeholder="نص ${p.kind==='حديث'?'الحديث':'الآية'}">${esc(p.text)}</textarea><input class="in" data-bind="${base}.src" value="${esc(p.src)}" placeholder="المصدر (اختياري) مثل: سورة البقرة، آية ٢"></div>`;
-    case 'lines':return `<div class="part">${head('أسطر إجابة')}<div class="row"><label>عدد الأسطر</label>${stepper(base+'.n',p.n,1,20)}</div></div>`;
-    case 'choices':return `<div class="part">${head('خيارات')}${p.opts.map((o,j)=>`<div class="br-head"><span class="br-tag">${LET[j]}</span><input class="in grow" data-bind="${base}.opts.${j}" value="${esc(o)}" placeholder="الخيار"><button class="ico" data-act="parr" data-op="del" data-sub="opts" data-i="${i}" data-k="${k}" data-j="${j}" aria-label="حذف">✕</button></div>`).join('')}${p.opts.length<6?`<div><button class="btn sm" data-act="parr" data-op="add" data-sub="opts" data-i="${i}" data-k="${k}">+ خيار</button></div>`:''}</div>`;
-    case 'match':return `<div class="part">${head('مطابقة')}${p.pairs.map((r,j)=>`<div class="br-head"><span class="br-tag">${ar(j+1)}</span><input class="in grow" data-bind="${base}.pairs.${j}.a" value="${esc(r.a)}" placeholder="العمود الأول"><span class="br-tag">${LET[j]}</span><input class="in grow" data-bind="${base}.pairs.${j}.b" value="${esc(r.b)}" placeholder="العمود الثاني"><button class="ico" data-act="parr" data-op="del" data-sub="pairs" data-i="${i}" data-k="${k}" data-j="${j}" aria-label="حذف">✕</button></div>`).join('')}<div><button class="btn sm" data-act="parr" data-op="add" data-sub="pairs" data-i="${i}" data-k="${k}">+ صف</button></div></div>`;
-    case 'table':return `<div class="part">${head('جدول / مقارنة')}<div class="tbed"><table><tr>${p.cols.map((c,j)=>`<td><input class="in" data-bind="${base}.cols.${j}" value="${esc(c)}" placeholder="العنوان ${ar(j+1)}"></td>`).join('')}</tr>${p.rows.map((r,x)=>`<tr>${p.cols.map((_,j)=>`<td><input class="in" data-bind="${base}.rows.${x}.${j}" value="${esc(r[j])}"></td>`).join('')}</tr>`).join('')}</table></div><div class="row"><button class="btn sm" data-act="parr" data-op="add" data-sub="rows" data-i="${i}" data-k="${k}">+ صف</button><button class="btn sm" data-act="parr" data-op="del" data-sub="rows" data-i="${i}" data-k="${k}" ${p.rows.length<2?'disabled':''}>− صف</button><button class="btn sm" data-act="parr" data-op="add" data-sub="cols" data-i="${i}" data-k="${k}" ${p.cols.length>=4?'disabled':''}>+ عمود</button><button class="btn sm" data-act="parr" data-op="del" data-sub="cols" data-i="${i}" data-k="${k}" ${p.cols.length<2?'disabled':''}>− عمود</button></div></div>`;
+    case 'lines':return `<div class="part">${head('أسطر إجابة')}${seg(base+'.ls',[['lines','أسطر'],['dots','منقطة'],['grid','مربعات'],['box','إطار'],['blank','فراغ']],p.ls||'lines')}<div class="row"><label>عدد الأسطر</label>${stepper(base+'.n',p.n,1,20)}</div></div>`;
+    case 'choices':return `<div class="part">${head('خيارات')}${p.opts.map((o,j)=>`<div class="br-head"><span class="br-tag">${LET[j]}</span><textarea class="in grow ag" rows="1" data-bind="${base}.opts.${j}" placeholder="الخيار">${esc(o)}</textarea><button class="ico" data-act="parr" data-op="del" data-sub="opts" data-i="${i}" data-k="${k}"${BJ} data-j="${j}" aria-label="حذف">✕</button></div>`).join('')}${p.opts.length<6?`<div><button class="btn sm" data-act="parr" data-op="add" data-sub="opts" data-i="${i}" data-k="${k}"${BJ}>+ خيار</button></div>`:''}${seg(base+'.lay',[['inl','داخل النص (…)'],['wrap','أفقي مع التفاف'],['col','كل خيار بسطر']],p.lay||'wrap')}</div>`;
+    case 'match':return `<div class="part">${head('مطابقة')}${p.pairs.map((r,j)=>`<div class="br-head"><span class="br-tag">${ar(j+1)}</span><textarea class="in grow ag" rows="1" data-bind="${base}.pairs.${j}.a" placeholder="العمود الأول">${esc(r.a)}</textarea><span class="br-tag">${LET[j]}</span><textarea class="in grow ag" rows="1" data-bind="${base}.pairs.${j}.b" placeholder="العمود الثاني">${esc(r.b)}</textarea><button class="ico" data-act="parr" data-op="del" data-sub="pairs" data-i="${i}" data-k="${k}"${BJ} data-j="${j}" aria-label="حذف">✕</button></div>`).join('')}<div><button class="btn sm" data-act="parr" data-op="add" data-sub="pairs" data-i="${i}" data-k="${k}"${BJ}>+ صف</button></div></div>`;
+    case 'table':return `<div class="part">${head('جدول / مقارنة')}<div class="tbed"><table><tr>${p.cols.map((c,j)=>`<td><input class="in" data-bind="${base}.cols.${j}" value="${esc(c)}" placeholder="العنوان ${ar(j+1)}"></td>`).join('')}</tr>${p.rows.map((r,x)=>`<tr>${p.cols.map((_,j)=>`<td><input class="in" data-bind="${base}.rows.${x}.${j}" value="${esc(r[j])}"></td>`).join('')}</tr>`).join('')}</table></div><div class="row"><button class="btn sm" data-act="parr" data-op="add" data-sub="rows" data-i="${i}" data-k="${k}"${BJ}>+ صف</button><button class="btn sm" data-act="parr" data-op="del" data-sub="rows" data-i="${i}" data-k="${k}"${BJ} ${p.rows.length<2?'disabled':''}>− صف</button><button class="btn sm" data-act="parr" data-op="add" data-sub="cols" data-i="${i}" data-k="${k}"${BJ} ${p.cols.length>=4?'disabled':''}>+ عمود</button><button class="btn sm" data-act="parr" data-op="del" data-sub="cols" data-i="${i}" data-k="${k}"${BJ} ${p.cols.length<2?'disabled':''}>− عمود</button></div></div>`;
     case 'image':return `<div class="part">${head('صورة')}<img src="${p.src}" alt="" style="max-width:100%;max-height:140px;border-radius:8px;align-self:flex-start"><div class="row"><label>العرض</label>${stepper(base+'.w',num(p.w)||60,20,100,'٪',10)}</div></div>`;
-    case 'points':return `<div class="part">${head('نقاط')}${p.items.map((t,j)=>`<div class="br-head"><span class="br-tag">${ar(j+1)}</span><input class="in grow" data-bind="${base}.items.${j}" value="${esc(t)}" placeholder="النقطة"><input class="in mk" inputmode="decimal" data-bind="${base}.ptm.${j}" value="${esc((p.ptm||[])[j]||'')}" placeholder="درجة" aria-label="درجة النقطة"><button class="ico" data-act="parr" data-op="del" data-sub="items" data-i="${i}" data-k="${k}" data-j="${j}" aria-label="حذف">✕</button></div>`).join('')}<div><button class="btn sm" data-act="parr" data-op="add" data-sub="items" data-i="${i}" data-k="${k}">+ نقطة</button></div></div>`;
+    case 'points':return `<div class="part">${head('نقاط')}${p.items.map((t,j)=>`<div class="br-head"><span class="br-tag">${ar(j+1)}</span><textarea class="in grow ag" rows="1" data-bind="${base}.items.${j}" placeholder="النقطة">${esc(t)}</textarea><input class="in mk" inputmode="decimal" data-bind="${base}.ptm.${j}" value="${esc((p.ptm||[])[j]||'')}" placeholder="درجة" aria-label="درجة النقطة"><button class="ico" data-act="parr" data-op="del" data-sub="items" data-i="${i}" data-k="${k}"${BJ} data-j="${j}" aria-label="حذف">✕</button></div>`).join('')}<div><button class="btn sm" data-act="parr" data-op="add" data-sub="items" data-i="${i}" data-k="${k}"${BJ}>+ نقطة</button></div></div>`;
   }
   return '';
 }
@@ -840,11 +861,13 @@ function qcard(q,i,n,d){
   const ex=d.kind==='exam';
   const br=q.branches.map((b,j)=>`<div class="branch">
 <div class="br-head"><span class="br-tag">${LET[j]||'•'}</span>
-<input class="in grow" data-bind="items.${i}.branches.${j}.text" value="${esc(b.text)}" placeholder="نص الفرع">
+<textarea class="in grow ag" rows="1" data-bind="items.${i}.branches.${j}.text" placeholder="نص الفرع">${esc(b.text)}</textarea>
 <input class="in mk" inputmode="decimal" data-bind="items.${i}.branches.${j}.marks" value="${esc(b.marks)}" placeholder="${ptSum(b.ptm)>0?ptSum(b.ptm):'الدرجة'}" aria-label="درجة الفرع">
 <button class="ico" data-act="del-br" data-i="${i}" data-j="${j}" aria-label="حذف الفرع">✕</button></div>
-${(b.pts||[]).map((t,x)=>`<div class="br-head" style="padding-inline-start:28px"><span class="br-tag" style="font-size:15px">${ar(x+1)}</span><input class="in grow" data-bind="items.${i}.branches.${j}.pts.${x}" value="${esc(t)}" placeholder="النقطة ${ar(x+1)}"><input class="in mk" inputmode="decimal" data-bind="items.${i}.branches.${j}.ptm.${x}" value="${esc((b.ptm||[])[x]||'')}" placeholder="درجة" aria-label="درجة النقطة"><button class="ico" data-act="br-pt" data-op="del" data-i="${i}" data-j="${j}" data-x="${x}" aria-label="حذف النقطة">✕</button></div>`).join('')}
-<div><button class="btn sm" data-act="br-pt" data-op="add" data-i="${i}" data-j="${j}">+ نقطة للفرع</button></div>
+${(b.pts||[]).map((t,x)=>`<div class="br-head" style="padding-inline-start:28px"><span class="br-tag" style="font-size:15px">${ar(x+1)}</span><textarea class="in grow ag" rows="1" data-bind="items.${i}.branches.${j}.pts.${x}" placeholder="النقطة ${ar(x+1)}">${esc(t)}</textarea><input class="in mk" inputmode="decimal" data-bind="items.${i}.branches.${j}.ptm.${x}" value="${esc((b.ptm||[])[x]||'')}" placeholder="درجة" aria-label="درجة النقطة"><button class="ico" data-act="br-pt" data-op="del" data-i="${i}" data-j="${j}" data-x="${x}" aria-label="حذف النقطة">✕</button></div>`).join('')}
+${(b.pts&&b.pts.length)?`<div class="ptl-box"><div class="hint" style="margin:0 0 4px">ترتيب النقاط</div><div class="chips">${[['','تلقائي'],['col','كل نقطة بسطر'],['row','متسلسلة داخل السطر']].map(([v,l])=>`<button class="chip" data-act="set" data-path="items.${i}.branches.${j}.ptl" data-val="${v}" aria-pressed="${(b.ptl||'')===v}">${l}</button>`).join('')}</div><div class="hint" style="margin:4px 0 0">الترتيب الأفقي يلتف تلقائياً عند امتلاء السطر.</div></div>`:''}
+${(b.parts||[]).map((p,k)=>partEditor(p,i,k,b.parts.length,j)).join('')}
+<div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn sm" data-act="br-pt" data-op="add" data-i="${i}" data-j="${j}">+ نقطة للفرع</button><button class="btn sm" data-act="addpart" data-t="lines" data-i="${i}" data-bj="${j}">سطر إجابة</button><button class="btn sm" data-act="addpart" data-t="choices" data-i="${i}" data-bj="${j}">خيارات</button><button class="btn sm" data-act="addpart" data-t="image" data-i="${i}" data-bj="${j}">صورة</button><button class="btn sm" data-act="open-add" data-i="${i}" data-bj="${j}">⋯ المزيد</button><button class="btn sm" data-act="vfield" data-i="${i}" data-j="${j}">${MIC} اكتب بالصوت</button></div>
 <details class="ans" ${b.answer?'open':''}><summary>إجابة الفرع</summary><textarea class="in" data-bind="items.${i}.branches.${j}.answer" placeholder="اكتب الإجابة">${esc(b.answer)}</textarea></details></div>`).join('');
   return `<div class="card${q.hidden?' dim':''}" data-i="${i}">
 <div class="card-top"><span class="tag">${q.hidden?'مخفي':'س'+ar(n)}</span><div class="tools" style="flex-wrap:wrap;justify-content:flex-end">${qtools(i,d,q)}</div></div>
@@ -868,6 +891,8 @@ function itemsTab(d){
     if(it.type==='h')return `<div class="card" data-i="${i}"><div class="card-top"><span class="tag tag-h">عنوان قسم</span><div class="tools">${tools(i,d)}</div></div>
 <input class="in" data-bind="items.${i}.text" value="${esc(it.text)}" placeholder="مثال: النحو">
 <div class="row"><label for="hm${i}">درجة القسم</label><input id="hm${i}" class="in mk" inputmode="decimal" data-bind="items.${i}.marks" value="${esc(it.marks||'')}" placeholder="تلقائي"></div></div>`;
+    if(it.type==='pb')return `<div class="card" data-i="${i}"><div class="card-top"><span class="tag tag-h">صفحة جديدة</span><div class="tools">${tools(i,d)}</div></div><div class="hint" style="margin:0">ما بعد هذه البطاقة يبدأ في صفحة جديدة.</div></div>`;
+    if(it.type==='blk'){window.__noPT=true;const h=`<div class="card" data-i="${i}"><div class="card-top"><span class="tag tag-h">عنصر</span><div class="tools">${tools(i,d)}</div></div>${(it.parts||[]).map((p,k)=>partEditor(p,i,k,it.parts.length)).join('')}</div>`;window.__noPT=false;return h}
     if(!it.hidden)n++;
     return qcard(it,i,n,d);
   }).join('');
@@ -938,6 +963,7 @@ function renderEditor(){
   $$('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===tab));
   fmtHome();
   $('#edBody').innerHTML=tab==='items'?itemsTab(d):tab==='info'?infoTab(d):designTab(d);
+  growAll($('#edBody'));requestAnimationFrame(()=>growAll($('#edBody')));
   $$('#edBody textarea').forEach(autosize);
   updUndo();
 }
@@ -952,7 +978,10 @@ function rerender(keepScroll){const y=window.scrollY;if(view==='setup')renderSet
 
 /* قائمة الإضافة */
 const ADD_ITEMS=[['image','صورة','من الجهاز'],['branch','فرع','أ، ب، ج'],['points','نقطة','نقاط مرقمة'],['passage','نص / قطعة','نص للقراءة'],['poem','أبيات شعر','صدر وعجز'],['quote','آية / حديث','بين قوسين'],['lines','أسطر إجابة','أسطر للكتابة'],['choices','خيارات','اختيار من متعدد'],['table','جدول / مقارنة','للإعراب والمقارنة'],['match','مطابقة','عمودان']];
-function openSheet(i){sheetFor=i;$('#mtitle').textContent='أضف إلى السؤال';$('#mgrid').innerHTML=ADD_ITEMS.map(a=>`<button data-act="addpart" data-t="${a[0]}"><b>${a[1]}</b><span>${a[2]}</span></button>`).join('');$('#msheet').hidden=false}
+const PAPER_ADD=[['paper-h','عنوان قسم','H#'],['paper-q','سؤال','1 2 3'],['passage','نص / قطعة','نص للقراءة'],['image','صورة','من الجهاز'],['quote','آية / حديث','بين قوسين'],['poem','أبيات شعر','صدر وعجز'],['table','جدول / مقارنة','للإعراب'],['pb','صفحة جديدة','فاصل صفحة']];
+function openPaperSheet(){$('#mtitle').textContent='أضف إلى الورقة';$('#mgrid').innerHTML=PAPER_ADD.map(a=>`<button data-act="paper-add" data-t="${a[0]}"><b>${a[1]}</b><span>${a[2]}</span></button>`).join('');$('#msheet').hidden=false}
+let sheetBr=null;
+function openSheet(i,bj){sheetFor=i;sheetBr=(bj===undefined||bj===''||bj===null)?null:+bj;$('#mtitle').textContent=sheetBr===null?'أضف إلى السؤال':'أضف إلى الفرع';$('#mgrid').innerHTML=ADD_ITEMS.filter(a=>sheetBr===null||(a[0]!=='branch'&&a[0]!=='points')).map(a=>`<button data-act="addpart" data-t="${a[0]}"><b>${a[1]}</b><span>${a[2]}</span></button>`).join('');$('#msheet').hidden=false}
 function openMenu(){
   $('#mtitle').textContent='خيارات الورقة';
   $('#mgrid').innerHTML=[['menu-dup','نسخ الورقة','نسخة جديدة'],['menu-kind',cur.kind==='exam'?'تحويل إلى ملزمة':'تحويل إلى امتحان','يغيّر الألوان'],['backup','نسخة احتياطية','ملف JSON'],['menu-del','حذف الورقة','لا يمكن التراجع']].map(a=>`<button data-act="${a[0]}"><b>${a[1]}</b><span>${a[2]}</span></button>`).join('');
@@ -986,12 +1015,19 @@ function dictate(b){
   rec.onend=()=>{rec=null;b.classList.remove('rec');b.lastChild.textContent='صوت'};
   try{rec.start()}catch(e){rec=null;b.classList.remove('rec');toast('تعذّر تشغيل الميكروفون')}
 }
+function grow(el){if(!el||el.tagName!=='TEXTAREA')return;el.style.height='auto';el.style.height=(el.scrollHeight+2)+'px'}
+function growAll(root){(root||document).querySelectorAll('textarea.in').forEach(grow)}
+document.addEventListener('input',e=>{const t=e.target;if(t&&t.tagName==='TEXTAREA'){if(t.classList.contains('ag')&&/\n/.test(t.value)){const p=t.selectionStart;t.value=t.value.replace(/\n+/g,' ');try{t.setSelectionRange(p,p)}catch(_){}}grow(t)}});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.classList&&e.target.classList.contains('ag')){e.preventDefault()}});
+document.addEventListener('toggle',e=>{if(e.target.tagName==='DETAILS')growAll(e.target)},true);
+window.addEventListener('resize',()=>growAll());
+const PA=(i,b)=>{const bj=b.dataset.bj;return (bj===undefined||bj==='')?cur.items[i].parts:cur.items[i].branches[+bj].parts};
 function closeSheet(){$('#msheet').hidden=true}
 function newPart(t){
   switch(t){
-    case 'passage':return{t,text:''};case 'poem':return{t,text:''};
-    case 'quote':return{t,kind:'آية',text:'',src:''};case 'lines':return{t,n:3};
-    case 'choices':return{t,opts:['','','','']};
+    case 'passage':return{t,text:'',st:'plain'};case 'poem':return{t,v:[['','']]};
+    case 'quote':return{t,kind:'آية',text:'',src:''};case 'lines':return{t,n:3,ls:'lines'};
+    case 'choices':return{t,opts:['','','',''],lay:'wrap'};
     case 'table':return{t,cols:['',''],rows:[['',''],['','']]};
     case 'match':return{t,pairs:[{a:'',b:''},{a:'',b:''},{a:'',b:''}]};
     case 'points':return{t,items:['','']};
@@ -1147,6 +1183,7 @@ document.addEventListener('click',e=>{
     case 'q-eye':{cur.items[i].hidden=!cur.items[i].hidden;afterChange(true);break}
     case 'q-dup':{const c=JSON.parse(JSON.stringify(cur.items[i]));cur.items.splice(i+1,0,c);afterChange(true);toast('تم نسخ السؤال');break}
     case 'voice':voice(i,b);break;
+    case 'vfield':{const br=cur.items[i].branches[+b.dataset.j];const k=(br.pts&&br.pts.length)?'pts.'+(br.pts.length-1):'text';const el=document.querySelector(`[data-bind="items.${i}.branches.${b.dataset.j}.${k}"]`);if(el){el.focus();lastField=el;const mb=$('#fmtMic');if(mb)dictate(mb)}break}
     case 'logo-add':$('#logoFile').click();break;
     case 'logo-del':cur.logo='';afterChange(true);break;
     case 'doc-menu':openMenu();break;
@@ -1170,21 +1207,34 @@ document.addEventListener('click',e=>{
     case 'del-br':{if(!confirmTap(b))break;cur.items[i].branches.splice(j,1);afterChange(true);break}
     case 'del-item':{if(!confirmTap(b))break;cur.items.splice(i,1);afterChange(true);break}
     case 'up':case 'down':{const t=a==='up'?i-1:i+1;if(t<0||t>=cur.items.length)break;const it=cur.items;[it[i],it[t]]=[it[t],it[i]];commit();rerender();const c=$('#edBody .card[data-i="'+t+'"]');if(c)c.scrollIntoView({block:'center'});break}
-    case 'open-add':openSheet(i);break;
+    case 'open-add':openSheet(i,b.dataset.bj);break;
+    case 'open-paper':openPaperSheet();break;
+    case 'paper-add':{
+      const t=b.dataset.t;closeSheet();
+      if(t==='paper-h'){cur.items.push({type:'h',text:''})}
+      else if(t==='paper-q'){cur.items.push({type:'q',text:'',marks:'',answer:'',space:'',branches:[],parts:[]})}
+      else if(t==='pb'){cur.items.push({type:'pb'})}
+      else if(t==='image'){pendImgQ=-2;pendImgBr=null;$('#imgFile').click();break}
+      else cur.items.push({type:'blk',branches:[],parts:[newPart(t)]});
+      commit();rerender();const c=$$('#edBody .card').pop();if(c){c.scrollIntoView({block:'center'});const f=$('textarea,input',c);if(f)f.focus()}
+      break}
     case 'close-sheet':closeSheet();break;
     case 'addpart':{
       const t=b.dataset.t;closeSheet();const qi=isNaN(i)?sheetFor:i;
-      if(t==='image'){pendImgQ=qi;$('#imgFile').click();break}
-      if(t==='branch'){cur.items[qi].branches.push({text:'',marks:'',answer:''})}
+      if(!isNaN(i))sheetBr=(b.dataset.bj===undefined||b.dataset.bj==='')?null:+b.dataset.bj;
+      if(t==='image'){pendImgQ=qi;pendImgBr=sheetBr;$('#imgFile').click();break}
+      if(t==='branch'){cur.items[qi].branches.push({text:'',marks:'',answer:'',parts:[]})}
+      else if(sheetBr!==null){const br=cur.items[qi].branches[sheetBr];br.parts=br.parts||[];br.parts.push(newPart(t))}
       else cur.items[qi].parts.push(newPart(t));
       commit();rerender(true);
       const c=$('#edBody .card[data-i="'+qi+'"]');
       if(c){const els=$$('.part',c);const last=t==='branch'?$$('.branch',c).pop():els[els.length-1];if(last){last.scrollIntoView({block:'center'});const f=$('textarea,input',last);if(f)f.focus()}}
       break}
-    case 'part-up':case 'part-down':{const arr=cur.items[i].parts,t=a==='part-up'?k-1:k+1;if(t<0||t>=arr.length)break;[arr[k],arr[t]]=[arr[t],arr[k]];afterChange(true);break}
-    case 'del-part':{if(!confirmTap(b))break;cur.items[i].parts.splice(k,1);afterChange(true);break}
+    case 'part-up':case 'part-down':{const arr=PA(i,b),t=a==='part-up'?k-1:k+1;if(t<0||t>=arr.length)break;[arr[k],arr[t]]=[arr[t],arr[k]];afterChange(true);break}
+    case 'del-part':{if(!confirmTap(b))break;PA(i,b).splice(k,1);afterChange(true);break}
     case 'parr':{
-      const p=cur.items[i].parts[k],sub=b.dataset.sub,add=b.dataset.op==='add';
+      const p=PA(i,b)[k],sub=b.dataset.sub,add=b.dataset.op==='add';
+      if(sub==='verses'){p.v=p.v||[];add?p.v.push(['','']):(p.v.length>1&&p.v.splice(j,1))}else
       if(sub==='opts'){add?(p.opts.length<6&&p.opts.push('')):(p.opts.length>2&&p.opts.splice(j,1))}
       else if(sub==='pairs'){add?p.pairs.push({a:'',b:''}):(p.pairs.length>1&&p.pairs.splice(j,1))}
       else if(sub==='items'){p.ptm=p.ptm||[];add?p.items.push(''):(p.items.length>1&&(p.items.splice(j,1),p.ptm.splice(j,1)))}
@@ -1198,7 +1248,7 @@ document.addEventListener('click',e=>{
       setPath(cur,path,nv);cur.updated=Date.now();afterChange(true);break}
     case 'eye':{const key=b.dataset.k;cur.hide[key]=!cur.hide[key];afterChange(true);break}
     case 'pal':{const p=PALS[k];cur.settings.qc=p[0];cur.settings.ac=p[1];cur.settings.pal=k;afterChange(true);break}
-    case 'print':doPrint();break;
+    case 'print':{try{if(!$('#printRoot').children.length)renderPreview();window.print()}catch(e){toast('تعذّرت الطباعة من هذا المتصفح، استخدم حفظ PDF')}break}
     case 'save-pdf':savePDF(false);break;
     case 'share-pdf':savePDF(true);break;
     case 'fit-toggle':cur.settings.fit1=b.checked;commit();renderPreview();break;
@@ -1214,7 +1264,7 @@ document.addEventListener('click',e=>{
   }
 });
 $('#logoFile').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(!f||!cur)return;readImage(f,320,u=>{cur.logo=u;afterChange(true)})});
-$('#imgFile').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(!f||!cur||pendImgQ<0||!cur.items[pendImgQ])return;readImage(f,900,u=>{cur.items[pendImgQ].parts.push({t:'image',src:u,w:60});afterChange(true);pendImgQ=-1})});
+$('#imgFile').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(!f||!cur||(pendImgQ!==-2&&(pendImgQ<0||!cur.items[pendImgQ])))return;readImage(f,900,u=>{if(pendImgQ===-2){cur.items.push({type:'blk',branches:[],parts:[{t:'image',src:u,w:60}]});afterChange(true);pendImgQ=-1;return}const tg=pendImgBr===null?cur.items[pendImgQ].parts:(cur.items[pendImgQ].branches[pendImgBr].parts=cur.items[pendImgQ].branches[pendImgBr].parts||[]);tg.push({t:'image',src:u,w:60});afterChange(true);pendImgQ=-1;pendImgBr=null})});
 $('#restoreFile').addEventListener('change',e=>{
   const f=e.target.files[0];if(!f)return;
   const r=new FileReader();
